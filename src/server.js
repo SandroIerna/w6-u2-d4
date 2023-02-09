@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import listEndpoints from "express-list-endpoints";
 import blogpostsRouter from "./api/blogposts/index.js";
+import authorsRouter from "./api/authors/index.js";
 import mongoose from "mongoose";
 import {
   badRequestHandler,
@@ -10,11 +11,13 @@ import {
   notFoundHandler,
   unauthorizedHandler,
 } from "./errorHandlers.js";
-import authorsRouter from "./api/authors/index.js";
+import googleStrategy from "./lib/auth/google.js";
+import passport from "passport";
 
 const server = express();
 
 const port = process.env.PORT || 3001;
+passport.use("google", googleStrategy);
 
 /* *************************** Middlewares *************************** */
 
@@ -36,6 +39,7 @@ const corsOpts = {
 server.use(cors(corsOpts)); */
 server.use(cors());
 server.use(express.json());
+server.use(passport.initialize());
 
 /* **************************** Endpoints **************************** */
 
@@ -57,5 +61,6 @@ mongoose.connection.on("connected", () => {
   server.listen(port, () => {
     console.table(listEndpoints(server));
     console.log(`Server is running on port: ${port}`);
+    console.log("BE:", process.env.BE_URL);
   });
 });

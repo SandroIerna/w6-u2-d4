@@ -1,6 +1,7 @@
 import express from "express";
 import createHttpError from "http-errors";
 import AuthorsModel from "./model.js";
+import passport from "passport";
 import { basicAuthMiddleware } from "../../lib/auth/basicAuth.js";
 import { adminOnlyMiddleware } from "../../lib/auth/adminOnly.js";
 import { JWTAuthMiddleware } from "../../lib/auth/jwtAuth.js";
@@ -18,10 +19,34 @@ authorsRouter.post("/", async (req, res, next) => {
   }
 });
 
+authorsRouter.get(
+  "/googleLogin",
+  passport.authenticate("google", { scope: ["profile", "email"] })
+);
+
+authorsRouter.get(
+  "/googleRedirect",
+  passport.authenticate("google", { session: false }),
+  async (req, res, next) => {
+    console.log(req.author);
+    res.send({ message: "googleRedirect" });
+  }
+);
+
 authorsRouter.get("/", JWTAuthMiddleware, async (req, res, next) => {
   try {
     const authors = await AuthorsModel.find();
     res.send(authors);
+  } catch (error) {
+    next(error);
+  }
+});
+
+authorsRouter.get("/me", JWTAuthMiddleware, async (req, res, next) => {
+  try {
+    const user = await AuthorsModel.findById(req.user._id);
+    if (user) res.send(user);
+    else next(createHttpError(404, "User not found!"));
   } catch (error) {
     next(error);
   }
